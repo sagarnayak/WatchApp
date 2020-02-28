@@ -1,4 +1,4 @@
-package com.sagar.android.watchapp
+package com.sagar.android.watchapp.ui.mainactivity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
 
         Wearable.getCapabilityClient(this).removeListener(
                 capabilityChangedListener,
-                CAPABILITY_WEAR_APP
+            CAPABILITY_WEAR_APP
         )
     }
 
@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         Wearable.getCapabilityClient(this)
                 .addListener(
                         capabilityChangedListener,
-                        CAPABILITY_WEAR_APP
+                    CAPABILITY_WEAR_APP
                 )
     }
 }
