@@ -39,6 +39,10 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         setContentView(binding.root)
 
         prepareCapabilityChangeListener()
+
+        binding.button.setOnClickListener {
+            openPlayStoreWithAppInDevicesWithoutAppInstalled()
+        }
     }
 
     private fun prepareCapabilityChangeListener() {
@@ -172,7 +176,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
     }
 
-    private val mResultReceiver: ResultReceiver = object : ResultReceiver(Handler()) {
+    private val resultReceiver: ResultReceiver = object : ResultReceiver(Handler()) {
         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
             if (resultCode == RemoteIntent.RESULT_OK) {
                 val toast = Toast.makeText(
@@ -213,7 +217,12 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             .setData(Uri.parse(APP_IN_PLAY_STORE))
 
         devicesWithoutApp.forEach { deviceWithoutApp ->
-
+            RemoteIntent.startRemoteActivity(
+                applicationContext,
+                intent,
+                resultReceiver,
+                deviceWithoutApp.id
+            )
         }
     }
 }
