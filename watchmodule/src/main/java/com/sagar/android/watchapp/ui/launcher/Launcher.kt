@@ -1,11 +1,13 @@
 package com.sagar.android.watchapp.ui.launcher
 
+import android.content.Context
 import android.os.Bundle
 import android.support.wearable.phone.PhoneDeviceType
 import androidx.appcompat.app.AppCompatActivity
 import androidx.wear.ambient.AmbientModeSupport
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.Node
+import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import com.sagar.android.logutilmaster.LogUtil
 import com.sagar.android.watchapp.core.KeyWordsAndConstants.CAPABILITY_PHONE_APP
@@ -14,6 +16,7 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.kodein
 import org.kodein.di.generic.instance
+
 
 class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider, KodeinAware {
 
@@ -35,6 +38,10 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
         )
 
         prepareCapabilityChangeListener()
+
+        binding.button.setOnClickListener {
+            putDataToDataLayer()
+        }
     }
 
     private fun setMessageToUI(message: String) {
@@ -124,6 +131,8 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
                 PhoneDeviceType.DEVICE_TYPE_ANDROID -> {
                     logUtil.logV("the device is android device.")
                     setMessageToUI("device is android.")
+
+                    sendMessage()
                 }
                 else -> {
                     logUtil.logV("the device is not an android device")
@@ -149,5 +158,51 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
                 logUtil.logV("exit the ambient mode")
             }
         }
+    }
+
+    private fun sendMessage() {
+        MessageHandlerThread(
+            this,
+            logUtil
+        ).start()
+    }
+
+    class MessageHandlerThread(private val context: Context, private val logUtil: LogUtil) :
+        Thread() {
+
+        override fun run() {
+            super.run()
+
+            Wearable.getNodeClient(context)
+                .connectedNodes
+                .addOnCompleteListener { p0 ->
+                    if (p0.isSuccessful) {
+                        p0.result?.forEach { node ->
+                            Wearable.getMessageClient(context)
+                                .sendMessage(
+                                    node.id,
+                                    "/path",
+                                    "message...".toByteArray()
+                                )
+                                .addOnCompleteListener { p0 -> logUtil.logV("message result >> $p0") }
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun putDataToDataLayer() {
+        val putDataMapRequest = PutDataMapRequest.create("/dataa")
+        putDataMapRequest.dataMap.putString("message", System.currentTimeMillis().toString())
+        val request = putDataMapRequest.asPutDataRequest()
+        request.setUrgent()
+
+        Wearable.getDataClient(applicationContext).putDataItem(request)
+            .addOnSuccessListener {
+                logUtil.logV("success")
+            }
+            .addOnFailureListener {
+                logUtil.logV("failed")
+            }
     }
 }
