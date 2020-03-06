@@ -15,6 +15,16 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/textViewHeadingForList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/_16sdp"
+        android:text="Select the device you want to handshake with from list below"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewMessage" />
+
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/buttonInstall"
         android:layout_width="wrap_content"
@@ -38,5 +48,5 @@
         app:layout_constraintBottom_toTopOf="@+id/buttonRefresh"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewMessage" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewHeadingForList" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,16 +9,23 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.wearable.*
 import com.google.android.wearable.intent.RemoteIntent
 import com.sagar.android.logutilmaster.LogUtil
 import com.sagar.android.watchapp.core.KeyWordsAndConstants.APP_IN_PLAY_STORE
 import com.sagar.android.watchapp.core.KeyWordsAndConstants.CAPABILITY_WEAR_APP
+import com.sagar.android.watchapp.core.KeyWordsAndConstants.HANDSHAKE
+import com.sagar.android.watchapp.core.MessageHandlerThread
 import com.sagar.android.watchapp.databinding.ActivityMainBinding
+import com.sagar.android.watchapp.ui.mainactivity.adapter.Adapter
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.kodein
 import org.kodein.di.generic.instance
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.concurrent.timerTask
 
 
 class MainActivity : AppCompatActivity(), KodeinAware {
@@ -31,6 +38,11 @@ class MainActivity : AppCompatActivity(), KodeinAware {
     private lateinit var messageReceivedListener: MessageClient.OnMessageReceivedListener
     private lateinit var nodesWithAppInstalled: Set<Node>
     private lateinit var nodesInContactMayNotHaveAppInstalled: List<Node>
+    private var nodeAvailableForHandShake: ArrayList<Node> = ArrayList()
+    private lateinit var adapter: Adapter
+    private var handshakeTimer: TimerTask = timerTask {
+        sendEmergencyHandShakeReq()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +50,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setUpRecyclerView()
         prepareCapabilityChangeListener()
         prepareMessageReceivedListener()
 
@@ -46,12 +59,23 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
 
         binding.buttonRefresh.setOnClickListener {
-            //todo refresh
+            findAllWearDevices()
         }
     }
 
     private fun setUpRecyclerView() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        Adapter(
+            nodeAvailableForHandShake,
+            object : Adapter.Callback {
+                override fun clicked(node: Node) {
+                    handShake(node)
+                }
+            }
+        ).apply {
+            binding.recyclerView.adapter = this
+            adapter = this
+        }
     }
 
     private fun setStatusToScreen(status: String) {
@@ -74,6 +98,8 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             findAllWearDevices()
 
             verifyNodes()
+
+            availableNodeListChanged()
         }
     }
 
@@ -84,6 +110,16 @@ class MainActivity : AppCompatActivity(), KodeinAware {
                     messageEvent.data
                 )}"
             )
+
+            if (messageEvent.path == HANDSHAKE) {
+                logUtil.logV("got handshake reply.")
+                handshakeTimer.cancel()
+                Toast.makeText(
+                    this,
+                    "Handshake Complete",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
@@ -172,6 +208,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
                             logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
                         }
                         verifyNodes()
+                        availableNodeListChanged()
                     }
                 } else {
                     logUtil.logV("Finding wear devices failed")
@@ -287,7 +324,33 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
     }
 
-    private fun showDevicesForHandShake() {
-
+    private fun availableNodeListChanged() {
+        nodeAvailableForHandShake.apply {
+            clear()
+            addAll(this)
+        }
+        adapter.notifyDataSetChanged()
     }
+
+    private fun handShake(node: Node) {
+        MessageHandlerThread(
+            this,
+            node,
+            OnCompleteListener {
+                logUtil.logV("sending message complete.")
+                waitForHandShakeReply(node)
+            }
+        ).start()
+    }
+
+    private fun waitForHandShakeReply(node: Node) {
+        logUtil.logV("waiting for handshake reply from ${node.displayName}")
+
+        Timer().schedule(
+            handshakeTimer,
+            2000
+        )
+    }
+
+    private fun sendEmergencyHandShakeReq() {}
 }

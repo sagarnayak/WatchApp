@@ -1,4 +1,4 @@
-package com.sagar.android.watchapp.ui.mainactivity
+package com.sagar.android.watchapp.services
 
 import android.util.Log
 import com.google.android.gms.wearable.*
