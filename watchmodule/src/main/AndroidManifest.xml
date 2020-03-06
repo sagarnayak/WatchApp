@@ -19,7 +19,9 @@
             android:name="com.google.android.wearable.standalone"
             android:value="false" />
 
-        <activity android:name="com.sagar.android.watchapp.ui.launcher.Launcher">
+        <activity
+            android:name="com.sagar.android.watchapp.ui.launcher.Launcher"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

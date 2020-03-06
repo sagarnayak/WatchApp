@@ -73,8 +73,8 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         super.onPause()
 
         Wearable.getCapabilityClient(this).removeListener(
-            capabilityChangedListener,
-            CAPABILITY_WEAR_APP
+                capabilityChangedListener,
+                CAPABILITY_WEAR_APP
         )
     }
 
@@ -82,10 +82,10 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         super.onResume()
 
         Wearable.getCapabilityClient(this)
-            .addListener(
-                capabilityChangedListener,
-                CAPABILITY_WEAR_APP
-            )
+                .addListener(
+                        capabilityChangedListener,
+                        CAPABILITY_WEAR_APP
+                )
 
         setStatusToScreen("initiating... ")
         findAllWearDevicesWithAppInstalled()
@@ -96,77 +96,78 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         logUtil.logV("Finding all devices with app installed")
 
         Wearable.getCapabilityClient(this)
-            .getCapability(
-                CAPABILITY_WEAR_APP,
-                CapabilityClient.FILTER_REACHABLE
-            )
-            .addOnCompleteListener { task ->
-                if (
-                    task.isSuccessful
-                ) {
-                    logUtil.logV("found list of devices with app installed")
+                .getCapability(
+                        CAPABILITY_WEAR_APP,
+                        CapabilityClient.FILTER_REACHABLE
+                )
+                .addOnCompleteListener { task ->
+                    if (
+                            task.isSuccessful
+                    ) {
+                        logUtil.logV("found list of devices with app installed")
 
-                    task.result?.let {
-                        val capabilityInfo: CapabilityInfo = it
-                        if (capabilityInfo.nodes.isEmpty()) {
+                        task.result?.let {
+                            val capabilityInfo: CapabilityInfo = it
+                            if (capabilityInfo.nodes.isEmpty()) {
+                                logUtil.logV("there is no device with app installed")
+                            }
+
+                            nodesWithAppInstalled = capabilityInfo.nodes
+                            capabilityInfo.nodes.forEach { node ->
+                                logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
+                            }
+
+                            verifyNodes()
+                        } ?: kotlin.run {
                             logUtil.logV("there is no device with app installed")
                         }
-
-                        nodesWithAppInstalled = capabilityInfo.nodes
-                        capabilityInfo.nodes.forEach { node ->
-                            logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
-                        }
-
-                        verifyNodes()
-                    } ?: kotlin.run {
-                        logUtil.logV("there is no device with app installed")
+                    } else {
+                        logUtil.logV("failed to get device list with app installed")
                     }
-                } else {
-                    logUtil.logV("failed to get device list with app installed")
                 }
-            }
     }
 
     private fun findAllWearDevices() {
         logUtil.logV("Finding all wear devices")
 
         Wearable.getNodeClient(this).connectedNodes
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    logUtil.logV("Finding wear devices successful")
-                    task.result?.let { nodeList ->
-                        logUtil.logV("Number of devices found ${nodeList.size}")
-                        nodesInContactMayNotHaveAppInstalled = nodeList
-                        nodeList.forEach { node ->
-                            logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        logUtil.logV("Finding wear devices successful")
+                        task.result?.let { nodeList ->
+                            logUtil.logV("Number of devices found ${nodeList.size}")
+                            nodesInContactMayNotHaveAppInstalled = nodeList
+                            nodeList.forEach { node ->
+                                logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
+                            }
+                            verifyNodes()
                         }
-                        verifyNodes()
+                    } else {
+                        logUtil.logV("Finding wear devices failed")
                     }
-                } else {
-                    logUtil.logV("Finding wear devices failed")
                 }
-            }
     }
 
     private fun verifyNodes() {
         logUtil.logV("verifying the nodes")
         if (
-            !this::nodesWithAppInstalled.isInitialized || !this::nodesInContactMayNotHaveAppInstalled.isInitialized
+                !this::nodesWithAppInstalled.isInitialized || !this::nodesInContactMayNotHaveAppInstalled.isInitialized
         ) {
             logUtil.logV("data not yet ready, will wait for that ...")
             return
         }
 
         if (
-            nodesInContactMayNotHaveAppInstalled.isEmpty()
+                nodesInContactMayNotHaveAppInstalled.isEmpty()
         ) {
             logUtil.logV("there are no devices to connect.")
             setStatusToScreen("there are no devices to connect.")
+            binding.button.visibility = View.GONE
             return
         }
 
         if (
-            nodesWithAppInstalled.isEmpty()
+                nodesWithAppInstalled.isEmpty()
         ) {
             logUtil.logV("no device has the app installed.")
             setStatusToScreen("no device has the app installed.")
@@ -174,7 +175,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
 
         if (
-            nodesWithAppInstalled.size < nodesInContactMayNotHaveAppInstalled.size
+                nodesWithAppInstalled.size < nodesInContactMayNotHaveAppInstalled.size
         ) {
             logUtil.logV("there are few devices with app and few have not installed the app")
             setStatusToScreen("there are few devices with app and few have not installed the app")
@@ -182,7 +183,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
 
         if (
-            nodesWithAppInstalled.size == nodesInContactMayNotHaveAppInstalled.size
+                nodesWithAppInstalled.size == nodesInContactMayNotHaveAppInstalled.size
         ) {
             logUtil.logV("all device have the app installed. good to go...")
             setStatusToScreen("all device have the app installed. good to go...")
@@ -194,17 +195,17 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
             if (resultCode == RemoteIntent.RESULT_OK) {
                 val toast = Toast.makeText(
-                    applicationContext,
-                    "Play Store Request to Wear device successful.",
-                    Toast.LENGTH_SHORT
+                        applicationContext,
+                        "Play Store Request to Wear device successful.",
+                        Toast.LENGTH_SHORT
                 )
                 toast.show()
             } else if (resultCode == RemoteIntent.RESULT_FAILED) {
                 val toast = Toast.makeText(
-                    applicationContext,
-                    "Play Store Request Failed. Wear device(s) may not support Play Store, "
-                            + " that is, the Wear device may be version 1.0.",
-                    Toast.LENGTH_LONG
+                        applicationContext,
+                        "Play Store Request Failed. Wear device(s) may not support Play Store, "
+                                + " that is, the Wear device may be version 1.0.",
+                        Toast.LENGTH_LONG
                 )
                 toast.show()
             } else {
@@ -227,15 +228,15 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             return
 
         val intent = Intent(Intent.ACTION_VIEW)
-            .addCategory(Intent.CATEGORY_BROWSABLE)
-            .setData(Uri.parse(APP_IN_PLAY_STORE))
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+                .setData(Uri.parse(APP_IN_PLAY_STORE))
 
         devicesWithoutApp.forEach { deviceWithoutApp ->
             RemoteIntent.startRemoteActivity(
-                applicationContext,
-                intent,
-                resultReceiver,
-                deviceWithoutApp.id
+                    applicationContext,
+                    intent,
+                    resultReceiver,
+                    deviceWithoutApp.id
             )
         }
     }
