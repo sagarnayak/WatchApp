@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         Wearable.getCapabilityClient(this)
             .getCapability(
                 CAPABILITY_WEAR_APP,
-                CapabilityClient.FILTER_ALL
+                CapabilityClient.FILTER_REACHABLE
             )
             .addOnCompleteListener { task ->
                 if (

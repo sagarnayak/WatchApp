@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.sagar.android.watchapp",
+  "variantName": "processReleaseResources",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "properties": [
+        {
+          "key": "packageId",
+          "value": "com.sagar.android.watchapp"
+        },
+        {
+          "key": "split",
+          "value": ""
+        },
+        {
+          "key": "minSdkVersion",
+          "value": "23"
+        }
+      ],
+      "versionCode": 1,
+      "versionName": "0.0.1",
+      "enabled": true,
+      "outputFile": "app-release.apk"
+    }
+  ]
+}
