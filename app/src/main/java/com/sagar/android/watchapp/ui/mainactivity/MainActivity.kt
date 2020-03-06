@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.ResultReceiver
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.wearable.CapabilityClient
@@ -45,11 +46,17 @@ class MainActivity : AppCompatActivity(), KodeinAware {
         }
     }
 
+    private fun setStatusToScreen(status: String) {
+        binding.textViewMessage.text = status
+    }
+
     private fun prepareCapabilityChangeListener() {
         capabilityChangedListener = CapabilityClient.OnCapabilityChangedListener { capabilityInfo ->
             logUtil.logV("capability changed....")
 
             logUtil.logV("number of devices with app installed ${capabilityInfo.nodes.size}")
+            setStatusToScreen("found ${capabilityInfo.nodes.size} device(s) with app installed.")
+            binding.button.visibility = View.GONE
 
             nodesWithAppInstalled = capabilityInfo.nodes
             capabilityInfo.nodes.forEach { node ->
@@ -80,6 +87,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
                 CAPABILITY_WEAR_APP
             )
 
+        setStatusToScreen("initiating... ")
         findAllWearDevicesWithAppInstalled()
         findAllWearDevices()
     }
@@ -100,8 +108,9 @@ class MainActivity : AppCompatActivity(), KodeinAware {
 
                     task.result?.let {
                         val capabilityInfo: CapabilityInfo = it
-                        if (capabilityInfo.nodes.isEmpty())
+                        if (capabilityInfo.nodes.isEmpty()) {
                             logUtil.logV("there is no device with app installed")
+                        }
 
                         nodesWithAppInstalled = capabilityInfo.nodes
                         capabilityInfo.nodes.forEach { node ->
@@ -152,6 +161,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             nodesInContactMayNotHaveAppInstalled.isEmpty()
         ) {
             logUtil.logV("there are no devices to connect.")
+            setStatusToScreen("there are no devices to connect.")
             return
         }
 
@@ -159,6 +169,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             nodesWithAppInstalled.isEmpty()
         ) {
             logUtil.logV("no device has the app installed.")
+            setStatusToScreen("no device has the app installed.")
             return
         }
 
@@ -166,6 +177,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             nodesWithAppInstalled.size < nodesInContactMayNotHaveAppInstalled.size
         ) {
             logUtil.logV("there are few devices with app and few have not installed the app")
+            setStatusToScreen("there are few devices with app and few have not installed the app")
             return
         }
 
@@ -173,6 +185,8 @@ class MainActivity : AppCompatActivity(), KodeinAware {
             nodesWithAppInstalled.size == nodesInContactMayNotHaveAppInstalled.size
         ) {
             logUtil.logV("all device have the app installed. good to go...")
+            setStatusToScreen("all device have the app installed. good to go...")
+            binding.button.visibility = View.GONE
         }
     }
 
