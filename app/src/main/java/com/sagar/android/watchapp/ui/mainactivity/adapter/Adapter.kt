@@ -1,5 +1,6 @@
 package com.sagar.android.watchapp.ui.mainactivity.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -12,8 +13,13 @@ class Adapter(private val list: ArrayList<Node>, private val callback: Callback)
     inner class Holder(private val binding: ListItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        @SuppressLint("SetTextI18n")
         fun bind(node: Node) {
-            binding.textViewNode.text = node.displayName
+            binding.textViewNode.text = ">>> ${node.displayName}"
+
+            binding.container.setOnClickListener {
+                callback.clicked(node)
+            }
         }
     }
 

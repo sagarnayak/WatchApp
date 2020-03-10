@@ -40,9 +40,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
     private lateinit var nodesInContactMayNotHaveAppInstalled: List<Node>
     private var nodeAvailableForHandShake: ArrayList<Node> = ArrayList()
     private lateinit var adapter: Adapter
-    private var handshakeTimer: TimerTask = timerTask {
-        sendEmergencyHandShakeReq()
-    }
+    private lateinit var handshakeTimer: TimerTask
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -327,7 +325,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
     private fun availableNodeListChanged() {
         nodeAvailableForHandShake.apply {
             clear()
-            addAll(this)
+            addAll(nodesWithAppInstalled)
         }
         adapter.notifyDataSetChanged()
     }
@@ -346,11 +344,17 @@ class MainActivity : AppCompatActivity(), KodeinAware {
     private fun waitForHandShakeReply(node: Node) {
         logUtil.logV("waiting for handshake reply from ${node.displayName}")
 
+        handshakeTimer = timerTask {
+            sendEmergencyHandShakeReq()
+        }
+
         Timer().schedule(
             handshakeTimer,
             2000
         )
     }
 
-    private fun sendEmergencyHandShakeReq() {}
+    private fun sendEmergencyHandShakeReq() {
+        logUtil.logV("not yet got any reply from watch. sending emergency handshake request.")
+    }
 }

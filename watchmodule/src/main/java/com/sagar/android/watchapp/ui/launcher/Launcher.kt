@@ -5,12 +5,12 @@ import android.os.Bundle
 import android.support.wearable.phone.PhoneDeviceType
 import androidx.appcompat.app.AppCompatActivity
 import androidx.wear.ambient.AmbientModeSupport
-import com.google.android.gms.wearable.CapabilityClient
-import com.google.android.gms.wearable.Node
-import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.Wearable
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.wearable.*
 import com.sagar.android.logutilmaster.LogUtil
 import com.sagar.android.watchapp.core.KeyWordsAndConstants.CAPABILITY_PHONE_APP
+import com.sagar.android.watchapp.core.KeyWordsAndConstants.HANDSHAKE
+import com.sagar.android.watchapp.core.MessageHandlerThread
 import com.sagar.android.watchapp.databinding.ActivityLauncherBinding
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
@@ -25,6 +25,7 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
     private val logUtil: LogUtil by instance()
     private lateinit var binding: ActivityLauncherBinding
     private lateinit var capabilityChangedListener: CapabilityClient.OnCapabilityChangedListener
+    private lateinit var messageReceivedListener: MessageClient.OnMessageReceivedListener
     private lateinit var nodeWithAppInstalled: Node
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,10 +35,11 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
         setContentView(binding.root)
 
         AmbientModeSupport.attach(
-            this
+                this
         )
 
         prepareCapabilityChangeListener()
+        prepareMessageReceivedListener()
 
         binding.button.setOnClickListener {
             putDataToDataLayer()
@@ -62,13 +64,31 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
         }
     }
 
+    private fun prepareMessageReceivedListener() {
+        messageReceivedListener = MessageClient.OnMessageReceivedListener { messageEvent ->
+            logUtil.logV(
+                    "new message received >> ${messageEvent.requestId} path >> ${messageEvent.path} || message >> ${String(
+                            messageEvent.data
+                    )}"
+            )
+
+            if (messageEvent.path == HANDSHAKE) {
+                logUtil.logV("got handshake request.")
+                sendHandShakeReply()
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
 
         Wearable.getCapabilityClient(this).addListener(
-            capabilityChangedListener,
-            CAPABILITY_PHONE_APP
+                capabilityChangedListener,
+                CAPABILITY_PHONE_APP
         )
+
+        Wearable.getMessageClient(this)
+                .addListener(messageReceivedListener)
 
         checkIfPhoneHasAppInstalled()
     }
@@ -77,36 +97,39 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
         super.onPause()
 
         Wearable.getCapabilityClient(this).removeListener(
-            capabilityChangedListener,
-            CAPABILITY_PHONE_APP
+                capabilityChangedListener,
+                CAPABILITY_PHONE_APP
         )
+
+        Wearable.getMessageClient(this)
+                .removeListener(messageReceivedListener)
     }
 
     private fun checkIfPhoneHasAppInstalled() {
         setMessageToUI("Initialising...")
 
         Wearable.getCapabilityClient(this)
-            .getCapability(
-                CAPABILITY_PHONE_APP,
-                CapabilityClient.FILTER_ALL
-            )
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    task.result?.let { capabilityInfo ->
-                        pickBestNode(capabilityInfo.nodes)?.let { node ->
-                            nodeWithAppInstalled = node
-                            logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
-                            verifyAppAndUpdateUI()
-                        } ?: run {
-                            logUtil.logV("dint get any node")
+                .getCapability(
+                        CAPABILITY_PHONE_APP,
+                        CapabilityClient.FILTER_ALL
+                )
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        task.result?.let { capabilityInfo ->
+                            pickBestNode(capabilityInfo.nodes)?.let { node ->
+                                nodeWithAppInstalled = node
+                                logUtil.logV("node >> Name- ${node.displayName}, Id- ${node.id}, IsNearBy- ${node.isNearby}")
+                                verifyAppAndUpdateUI()
+                            } ?: run {
+                                logUtil.logV("dint get any node")
+                            }
                         }
-                    }
-                } else {
-                    logUtil.logV("task failed")
+                    } else {
+                        logUtil.logV("task failed")
 
-                    setMessageToUI("Task failed")
+                        setMessageToUI("Task failed")
+                    }
                 }
-            }
     }
 
     private fun pickBestNode(nodes: Set<Node>): Node? {
@@ -162,32 +185,32 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
 
     private fun sendMessage() {
         MessageHandlerThread(
-            this,
-            logUtil
+                this,
+                logUtil
         ).start()
     }
 
     class MessageHandlerThread(private val context: Context, private val logUtil: LogUtil) :
-        Thread() {
+            Thread() {
 
         override fun run() {
             super.run()
 
             Wearable.getNodeClient(context)
-                .connectedNodes
-                .addOnCompleteListener { p0 ->
-                    if (p0.isSuccessful) {
-                        p0.result?.forEach { node ->
-                            Wearable.getMessageClient(context)
-                                .sendMessage(
-                                    node.id,
-                                    "/path",
-                                    "message...".toByteArray()
-                                )
-                                .addOnCompleteListener { p0 -> logUtil.logV("message result >> $p0") }
+                    .connectedNodes
+                    .addOnCompleteListener { p0 ->
+                        if (p0.isSuccessful) {
+                            p0.result?.forEach { node ->
+                                Wearable.getMessageClient(context)
+                                        .sendMessage(
+                                                node.id,
+                                                "/path",
+                                                "message...".toByteArray()
+                                        )
+                                        .addOnCompleteListener { p0 -> logUtil.logV("message result >> $p0") }
+                            }
                         }
                     }
-                }
         }
     }
 
@@ -198,11 +221,22 @@ class Launcher : AppCompatActivity(), AmbientModeSupport.AmbientCallbackProvider
         request.setUrgent()
 
         Wearable.getDataClient(applicationContext).putDataItem(request)
-            .addOnSuccessListener {
-                logUtil.logV("success")
-            }
-            .addOnFailureListener {
-                logUtil.logV("failed")
-            }
+                .addOnSuccessListener {
+                    logUtil.logV("success")
+                }
+                .addOnFailureListener {
+                    logUtil.logV("failed")
+                }
+    }
+
+    private fun sendHandShakeReply() {
+        logUtil.logV("sending handshake reply..")
+        MessageHandlerThread(
+                this,
+                nodeWithAppInstalled,
+                OnCompleteListener {
+                    logUtil.logV("sent handshake reply.")
+                }
+        ).start()
     }
 }
