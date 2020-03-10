@@ -333,7 +333,7 @@ class MainActivity : AppCompatActivity(), KodeinAware {
     private fun handShake(node: Node) {
         MessageHandlerThread(
             this,
-            node,
+            node.id,
             OnCompleteListener {
                 logUtil.logV("sending message complete.")
                 waitForHandShakeReply(node)
@@ -356,5 +356,21 @@ class MainActivity : AppCompatActivity(), KodeinAware {
 
     private fun sendEmergencyHandShakeReq() {
         logUtil.logV("not yet got any reply from watch. sending emergency handshake request.")
+
+        val putDataMapRequest = PutDataMapRequest.create("/data_client_handshake")
+        putDataMapRequest.dataMap.putString(
+            "newKeyword",
+            System.currentTimeMillis().toString()
+        )
+        val request = putDataMapRequest.asPutDataRequest()
+        request.setUrgent()
+
+        Wearable.getDataClient(applicationContext).putDataItem(request)
+            .addOnSuccessListener {
+                logUtil.logV("success, sending emergency handshake req")
+            }
+            .addOnFailureListener {
+                logUtil.logV("failed, sending emergency handshake req")
+            }
     }
 }

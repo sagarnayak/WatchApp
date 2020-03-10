@@ -24,7 +24,7 @@
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
                 <data
                     android:host="*"
-                    android:path="/dataa"
+                    android:path="/data_client"
                     android:scheme="wear" />
             </intent-filter>
         </service>
